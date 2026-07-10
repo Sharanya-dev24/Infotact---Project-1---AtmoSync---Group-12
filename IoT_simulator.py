@@ -2,7 +2,7 @@ import random
 from datetime import datetime, timedelta
 import pandas as pd
 
-Num_Rows = 2000
+Num_Rows = 200
 
 commodities = {
     "Avocados": {"temp": (4, 8), "humidity": (85, 95)},
