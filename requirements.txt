@@ -1,0 +1,4 @@
+kafka-python
+faker
+snowflake-connector-python
+pandas
