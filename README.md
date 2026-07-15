@@ -2,3 +2,8 @@
 This is a repository created as part of the internship process for Group 12 of data analytics of Infotact Solutions
 
 The Python code was run using Visual Studio Code (VS Code), and the CSV file was generated as the output of the program. - Himabindu
+- Docker Desktop installation
+- Docker Compose configuration for Apache Kafka
+- Project folder setup
+- single shipment generation
+- Time-compressed simulation
