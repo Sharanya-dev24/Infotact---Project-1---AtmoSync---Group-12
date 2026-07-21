@@ -5,10 +5,13 @@ The Python code was run using Visual Studio Code (VS Code), and the CSV file was
 - Docker Desktop installation
 - Docker Compose configuration for Apache Kafka
 - Project folder setup
-- single shipment generation
+- Multiple shipment and container telemetry simulation
 - Time-compressed simulation
 - Python producer to stream IoT telemetry data into Apache Kafka
+- Apache Kafka topic configuration
 - Python consumer to read Kafka messages
 - Snowflake integration for storing streaming data
+- Snowflake connection module
 - End-to-end Kafka to Snowflake data ingestion pipeline
 - Validation of data ingestion in Snowflake
+
