@@ -1,30 +1,13 @@
 import random
 from datetime import datetime, timedelta
 import pandas as pd
+import time
 
-Num_Rows = 200
+from producer import send_to_kafka, close_producer
 
-commodities = {
-    "Avocados": {"temp": (4, 8), "humidity": (85, 95)},
-    "Bananas": {"temp": (12, 15), "humidity": (80, 90)},
-    "Mangoes": {"temp": (8, 13), "humidity": (80, 90)},
-    "Grapes": {"temp": (0, 4), "humidity": (90, 95)},
-    "Apples": {"temp": (0, 4), "humidity": (85, 90)},
-    "Tomatoes": {"temp": (12, 18), "humidity": (70, 85)},
-    "Oranges": {"temp": (3, 8), "humidity": (80, 90)},
-    "Potatoes": {"temp": (5, 10), "humidity": (85, 95)}
-}
+routes = pd.read_csv("routes1.csv")
 
-routes = [
-    ("Hyderabad", "Mumbai"),
-    ("Hyderabad", "Chennai"),
-    ("Bengaluru", "Delhi"),
-    ("Vizag", "Mumbai"),
-    ("Pune", "Kolkata"),
-    ("Nagpur", "Chennai")
-]
-
-# Approximate GPS coordinates
+# CITY COORDINATES
 city_coords = {
     "Hyderabad": (17.3850, 78.4867),
     "Mumbai": (19.0760, 72.8777),
@@ -37,77 +20,160 @@ city_coords = {
     "Nagpur": (21.1458, 79.0882)
 }
 
-start_time = datetime.now()
+# COMMODITY CONDITIONS
+commodity_conditions = {
+    "Avocados": {"temp": (4, 8), "humidity": (85, 95)},
+    "Bananas": {"temp": (12, 15), "humidity": (80, 90)},
+    "Mangoes": {"temp": (8, 13), "humidity": (80, 90)},
+    "Grapes": {"temp": (0, 4), "humidity": (90, 95)},
+    "Apples": {"temp": (0, 4), "humidity": (85, 90)},
+    "Tomatoes": {"temp": (12, 18), "humidity": (70, 85)},
+    "Oranges": {"temp": (3, 8), "humidity": (80, 90)},
+    "Potatoes": {"temp": (5, 10), "humidity": (85, 95)}
+}
 
-records = []
+for index, route in routes.iterrows():
 
-for i in range(Num_Rows):
+    origin = route["origin"]
+    destination = route["destination"]
+    distance_km = route["distance_km"]
 
-    commodity = random.choice(list(commodities.keys()))
+    latitude, longitude = city_coords[origin]
 
-    temp_range = commodities[commodity]["temp"]
-    hum_range = commodities[commodity]["humidity"]
+    commodity = random.choice(list(commodity_conditions.keys()))
 
-    origin, destination = random.choice(routes)
+    shipment_id = f"SHP{1001 + index}"
+    container_id = f"CNT{index + 1:03}"
 
-    lat, lon = city_coords[origin]
+    temp_range = commodity_conditions[commodity]["temp"]
+    humidity_range = commodity_conditions[commodity]["humidity"]
 
-    # Add small GPS variation
-    latitude = round(lat + random.uniform(-0.25, 0.25), 5)
-    longitude = round(lon + random.uniform(-0.25, 0.25), 5)
+    average_speed = random.randint(45, 55)
+
+    travel_hours = distance_km / average_speed
+
+    clock_interval = 0.2         # Send one record every 0.2 real seconds
+    simulation_interval = 30         # Each record represents 30 minutes of travel
+
+    travel_minutes = int(travel_hours * 60)
+
+    total_readings = travel_minutes // simulation_interval
+
+    print("---------------------------------------")
+    print("Shipment :", shipment_id)
+    print("Container:", container_id)
+    print(origin, "->", destination)
+    print("Commodity:", commodity)
+    print("Distance:", distance_km, "km")
+    print("Speed:", average_speed, "km/hr")
+    print("Travel Hours:", round(travel_hours, 2))
+    print("Compression: 15 simulated minutes every 5 seconds")
+    print("Telemetry Records:", total_readings)
+
+    start_time = datetime.now()
 
     temperature = round(random.uniform(*temp_range), 2)
-    humidity = round(random.uniform(*hum_range), 2)
-    vibration = round(random.uniform(0.0, 2.0), 2)
-    pressure = round(random.uniform(995, 1025), 2)
-    battery = random.randint(65, 100)
-    speed = round(random.uniform(0, 90), 2)
+    humidity = round(random.uniform(*humidity_range), 2)
+    vibration = 0.20
+    battery = 100
 
-    door_status = random.choice(["Closed", "Closed", "Closed", "Open"])
-    light_detected = door_status == "Open"
+    for i in range(total_readings):
 
-    # spoilage formula
-    spoilage = (
-        abs(temperature - sum(temp_range)/2) * 0.08 +
-        vibration * 0.15 +
-        (100 - humidity) * 0.004
-    )
+        clock_timestamp = datetime.now()
 
-    spoilage = round(min(spoilage, 1.0), 2)
+        simulated_timestamp = start_time + timedelta(
+            minutes=i * simulation_interval
+        )
+        temperature += random.uniform(-0.15, 0.20)
+        humidity += random.uniform(-0.6, 0.6)
+        vibration += random.uniform(-0.03, 0.03)
 
-    if spoilage < 0.30:
-        alert = "Normal"
-    elif spoilage < 0.60:
-        alert = "Warning"
-    else:
-        alert = "Critical"
+        temperature = max(temp_range[0], min(temp_range[1] + 2, temperature))
+        humidity = max(70, min(98, humidity))
+        vibration = max(0, round(vibration, 2))
 
-    sensor_status = random.choice(["Healthy"] * 9 + ["Faulty"])
+        pressure = round(random.uniform(995, 1025), 2)
 
-    records.append({
-        "timestamp": (start_time + timedelta(seconds=i*5)).strftime("%Y-%m-%d %H:%M:%S"),
-        "container_id": f"CNT{random.randint(1,25):03}",
-        "shipment_id": f"SHP{1000+i}",
-        "commodity": commodity,
-        "origin": origin,
-        "destination": destination,
-        "latitude": latitude,
-        "longitude": longitude,
-        "temperature": temperature,
-        "humidity": humidity,
-        "vibration": vibration,
-        "pressure": pressure,
-        "battery_level": battery,
-        "door_status": door_status,
-        "light_detected": light_detected,
-        "gps_speed": speed,
-        "spoilage_index": spoilage,
-        "sensor_status": sensor_status,
-        "alert_level": alert
-    })
+        battery = max(20, battery - 0.01)
 
-df = pd.DataFrame(records)
+        speed = round(random.uniform(average_speed - 3, average_speed + 3), 2)
 
-df.to_csv("container_telemetry3.csv", index=False)
+        latitude += random.uniform(0.001, 0.005)
+        longitude += random.uniform(-0.005, 0.001)
 
-print(df.head())
+        door_status = "Closed"
+
+        if random.random() < 0.02:
+            door_status = "Open"
+
+        light_detected = door_status == "Open"
+
+        ideal_temp = (temp_range[0] + temp_range[1]) / 2
+
+        spoilage = (
+            abs(temperature - ideal_temp) * 0.08 +
+            vibration * 0.15 +
+            (100 - humidity) * 0.004
+        )
+
+        spoilage = round(min(spoilage, 1), 2)
+
+        if spoilage < 0.30:
+            alert = "Normal"
+        elif spoilage < 0.60:
+            alert = "Warning"
+        else:
+            alert = "Critical"
+
+        telemetry = {
+
+            "clock_timestamp": clock_timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+
+            "simulated_timestamp": simulated_timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+            "container_id": container_id,
+            "shipment_id": shipment_id,
+
+            "commodity": commodity,
+
+            "origin": origin,
+            "destination": destination,
+
+            "latitude": round(latitude, 5),
+            "longitude": round(longitude, 5),
+
+            "temperature": round(temperature, 2),
+            "humidity": round(humidity, 2),
+
+            "vibration": vibration,
+            "pressure": pressure,
+
+            "battery_level": round(battery, 2),
+
+            "door_status": door_status,
+            "light_detected": light_detected,
+
+            "gps_speed": speed,
+
+            "spoilage_index": spoilage,
+
+            "sensor_status": "Healthy",
+
+            "alert_level": alert
+        }
+        
+
+        print(
+            f"Sent -> "
+            f"{shipment_id} | "
+            f"{container_id} | "
+            f"{round(temperature,2)}°C | "
+            f"{round(humidity,2)}% | "
+            f"{alert}"
+        )
+        send_to_kafka(telemetry)
+        time.sleep(clock_interval)
+
+
+close_producer()
+
+print("\nLive telemetry streaming completed!")
