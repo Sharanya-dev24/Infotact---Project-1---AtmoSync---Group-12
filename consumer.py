@@ -3,7 +3,7 @@ from kafka import KafkaConsumer
 
 # Connect to Kafka
 consumer = KafkaConsumer(
-    "container_telemetry",
+    "container-telemetry",
     bootstrap_servers="localhost:9092",
     auto_offset_reset="earliest",
     value_deserializer=lambda x: json.loads(x.decode("utf-8"))
