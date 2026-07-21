@@ -1,20 +1,3 @@
-# import snowflake.connector
-
-
-# def get_connection():
-
-#     conn = snowflake.connector.connect(
-#         user="PadidalaHimabindu",
-#         password="uKziCA2KQmtpk37",
-#         account="QUPWKPV-OJ19878",
-#         warehouse="ATMOSYNC_WH",
-#         database="ATMOSYNC_DB",
-#         schema="RAW"
-#     )
-
-#     return conn
-
-
 import os
 from dotenv import load_dotenv
 import snowflake.connector
